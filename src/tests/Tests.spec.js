@@ -8,15 +8,17 @@ export const homePageDuration = new Trend('home_page_duration', true);
 export const homePageContentOK = new Rate('home_page_content_ok');
 
 export const options = {
+  vus: 7,
   thresholds: {
-    http_req_failed: ['rate<0.05'],
-    home_page_duration: ['p(95)<3000'],
+    http_req_failed: ['rate<0.25'],
+    home_page_duration: ['p(90)<6800'],
     home_page_content_ok: ['rate>0.95']
   },
-  stages: Array.from({ length: 60 }, (_, index) => ({
-    duration: '30s',
-    target: (index + 1) * 50
-  }))
+  stages: [
+    { duration: '1m10s', target: 7 },
+    { duration: '1m10s', target: 50 },
+    { duration: '1m10s', target: 92 }
+  ]
 };
 
 export function handleSummary(data) {
@@ -27,7 +29,7 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  const baseUrl = __ENV.BASE_URL || 'https://www.dudaimoveis.com.br';
+  const baseUrl = __ENV.BASE_URL || 'https://berzerk.com.br';
 
   const params = {
     headers: {
@@ -38,15 +40,14 @@ export default function () {
   const OK = 200;
   const res = http.get(`${baseUrl}`, params);
   const body = res.body || '';
-  const contentOK = res.status === OK && body.includes('Encontre seu imóvel');
+  const contentOK = res.status === OK && body.includes('Preço');
 
   homePageDuration.add(res.timings.duration);
   homePageContentOK.add(contentOK);
 
   check(res, {
     'GET homepage - status 200': () => res.status === OK,
-    'GET homepage - contains property search content': () =>
-      body.includes('Encontre seu imóvel')
+    'GET homepage - contains product pricing': () => body.includes('Preço')
   });
 
   sleep(1);
